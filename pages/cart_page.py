@@ -8,7 +8,6 @@ class CartPage:
         self.driver = driver
         self.wait = WebDriverWait(driver, 10)
 
-        # Updated Selectors based on your latest Checkout HTML
         # The shipping fee is the second h5 inside the shipment-container
         self.shipping_cost = (By.CSS_SELECTOR, ".shipment-container h5:last-child")
         self.product_total = (By.CSS_SELECTOR, ".product-total-container h5:last-child")

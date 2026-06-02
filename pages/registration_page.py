@@ -8,7 +8,7 @@ class RegistrationPage:
         self.driver = driver
         self.wait = WebDriverWait(driver, 10)
 
-        # Locators from your script
+        # Locators in script
         self.human_icon = (By.XPATH, "//div[@class='social-icon-cont']/div[1]")
         self.switch_to_signup_link = (By.XPATH, "//a[@class='switch-link']")
         self.fullname_input = (By.XPATH, "//input[@placeholder='Full Name']")
@@ -16,7 +16,7 @@ class RegistrationPage:
         self.password_input = (By.XPATH, "//input[@type='password']")
         self.submit_button = (By.XPATH, "//button[@type='submit']")
 
-        # New success message locator matching your toast notification element class
+        # success message locator matching toast notification element class
         self.success_toast = (By.CLASS_NAME, "go3958317564")
 
     def navigate_to_signup(self):

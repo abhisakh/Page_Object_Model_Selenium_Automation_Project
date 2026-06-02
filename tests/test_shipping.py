@@ -43,7 +43,7 @@ def test_shipping_costs_bva(driver, quantity, expected_shipping):
     print(f"[START] BVA Loop: Qty {quantity} | Target Shipping: {expected_shipping}€")
     print(f"==========================================")
 
-    # 2. Return to store grid and add items sequentially using your working flow
+    # 2. Return to store grid and add items sequentially using working flow
     print(f"[STEP 1] Adding {quantity} items of 'Celery' from store grid...")
     store_page = StorePage(driver)
     driver.get(f"{constants.BASE_URL}/store")
@@ -153,7 +153,7 @@ def test_shipping_fee_reduction_calculation_bug_003(driver):
     print("[STEP 3.1] Reductions complete. Waiting 2s for layout synchronization...")
     time.sleep(2)
 
-    # 5. Extract values from your shipment-container layout structure
+    # 5. Extract values from shipment-container layout structure
     print("[STEP 4] Locating shipment container text nodes...")
     shipment_card = wait.until(
         EC.visibility_of_element_located((By.CLASS_NAME, "shipment-container"))
