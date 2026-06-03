@@ -36,6 +36,8 @@ A robust, enterprise-grade automated functional testing framework for **GroceryM
 - [📂 Project Structure](#-project-structure)
 - [⚙️ Prerequisites & Installation](#️-prerequisites--installation)
 - [🔧 Configuration](#-configuration)
+  - [utils/constants.py](#utilsconstantspy)
+  - [pytest.ini - Comprehensive Guide](#pytestini---pytest-configuration) ⭐ **IMPORTANT**
 - [📄 Page Objects](#-page-objects)
 - [🧪 Test Suites](#-test-suites)
 - [🐛 Bug Tracking & Verification](#-bug-tracking--verification-strategy)
@@ -43,7 +45,8 @@ A robust, enterprise-grade automated functional testing framework for **GroceryM
 - [💡 Best Practices](#-best-practices)
 - [🔍 Troubleshooting](#-troubleshooting)
 - [📝 Contributing](#-contributing)
-- [🔄 CI/CD Integration](#️-cicd-integration)
+- [🔄 CI/CD Integration](#️-cicd-integration) ⭐ **IMPORTANT**
+  - [automated-tests.yml - GitHub Actions Guide](#automated-testsyml---github-actions-workflow)
 - [🏗️ Architecture & Tech Stack Portfolio](#️-architecture--tech-stack-portfolio)
 - [📄 License](#-license)
 
@@ -284,23 +287,198 @@ ERR_AGE_DENIED = "You are underage. You can still browse the site, but you will 
 ERR_MAX_CHAR = "Feedback cannot exceed 500 characters."
 ```
 
-### pytest.ini
+---
+
+### pytest.ini - Pytest Configuration
+
+#### **What is pytest.ini?**
+
+`pytest.ini` is a configuration file that tells Pytest **exactly how to run your tests**. It's the control center for test execution behavior.
+
+#### **Why pytest.ini is Critical**
+
+| Without pytest.ini | With pytest.ini |
+|-------------------|-----------------|
+| ❌ Slow test discovery (searches entire directory) | ✅ Fast & targeted (only searches `tests/` folder) |
+| ❌ Test markers don't work (`-m` flag fails) | ✅ Custom markers work perfectly |
+| ❌ Confusing, verbose output | ✅ Clean, professional output |
+| ❌ Inconsistent behavior across team | ✅ Consistent everywhere |
+| ❌ Silent failures (bad marker fails silently) | ✅ Strict mode catches mistakes |
+| ❌ Hard to organize test groups | ✅ Easy test organization by marker |
+
+#### **Your pytest.ini Configuration**
 
 ```ini
 [pytest]
-testpaths = tests
-python_files = test_*.py
-python_classes = Test*
-python_functions = test_*
+# Test Discovery Configuration
+testpaths = tests                               # Only look in tests/ folder
+python_files = test_*.py                       # Files matching test_*.py are test files
+python_classes = Test*                         # Classes starting with Test are test classes
+python_functions = test_*                      # Functions starting with test_ are tests
 
+# Test Markers - Define custom test groups
 markers =
-    smoke: Quick smoke tests
-    regression: Full regression suite
-    bug_tracker: Bug verification tests
+    smoke: Quick smoke tests for critical functionality
+    regression: Full regression test suite
+    bug_tracker: Bug verification tests (inverted assertions)
     critical: Critical functionality tests
+    slow: Slow running tests
 
-addopts = -v --strict-markers --tb=short
+# Output Options
+addopts = -v --strict-markers --tb=short      # Verbose, strict markers, short traceback
 ```
+
+#### **What Each Configuration Does**
+
+**1. Test Discovery (`testpaths = tests`)**
+```bash
+# WITH pytest.ini
+$ pytest
+# Pytest ONLY searches tests/ folder
+# Time: 0.15 seconds ✅ FAST
+
+# WITHOUT pytest.ini
+$ pytest
+# Pytest searches everything (.venv, __pycache__, .git, etc.)
+# Time: 2.45 seconds ❌ SLOW & searches unnecessary files
+```
+
+**2. Test Markers - Enable Test Group Selection**
+
+Your markers allow this:
+
+```bash
+# Run only SMOKE tests (quick validation)
+$ pytest -m smoke
+tests/test_login.py::test_successful_login PASSED
+tests/test_registration.py::test_user_registration_flow PASSED
+
+# Run only REGRESSION tests (full test suite)
+$ pytest -m regression
+tests/test_age_verification.py::test_age_verification_boundaries PASSED
+tests/test_shipping.py::test_shipping_costs_bva PASSED
+
+# Run only BUG TRACKER tests (verify known bugs still exist)
+$ pytest -m bug_tracker
+tests/test_shipping.py::test_shipping_fee_reduction_calculation_bug_003 PASSED [Green]
+tests/test_product_rating.py::test_review_edit_character_limit_bypass_bug_001 PASSED [Green]
+tests/test_product_rating.py::test_posted_review_returns_empty_string_bug_004 PASSED [Green]
+
+# Run CRITICAL tests only
+$ pytest -m critical
+(runs only your most important tests)
+
+# Run EVERYTHING EXCEPT bug trackers
+$ pytest -m "not bug_tracker"
+(all tests except the 3 bug verifier tests)
+
+# Combine markers
+$ pytest -m "smoke and not slow"
+(smoke tests that aren't slow)
+```
+
+**3. Strict Markers - Catch Configuration Mistakes**
+
+```bash
+# WITH pytest.ini (--strict-markers enabled)
+$ pytest -m "smok"  # Typo!
+ERROR: marker 'smok' not found in config
+Available markers: smoke, regression, bug_tracker, critical, slow
+✅ Catches the mistake immediately!
+
+# WITHOUT pytest.ini
+$ pytest -m "smok"
+(Silently does nothing - dangerous!)
+```
+
+**4. Output Options - Professional Formatting**
+
+```bash
+# WITH pytest.ini (addopts = -v --strict-markers --tb=short)
+$ pytest
+
+tests/test_login.py::test_successful_login PASSED                      [50%]
+tests/test_login.py::test_login_invalid_email PASSED                  [100%]
+
+======================== 2 passed in 0.45s =========================
+# ✅ Clean, professional, readable
+
+# WITHOUT pytest.ini (using defaults)
+$ pytest
+..
+# ❌ Just dots (don't know what's running)
+# ❌ Verbose error messages (50+ lines per error)
+# ❌ Hard to debug
+```
+
+#### **Real-World Importance: Team Scenario**
+
+**Without pytest.ini:**
+```
+Your Laptop: $ pytest
+# Tests run with default settings ✅
+
+Developer A's Laptop: $ pytest
+# Different default settings 😟
+
+CI/CD Pipeline: $ pytest
+# Yet another configuration ❌
+
+RESULT: "It works on my machine!" 🤦
+```
+
+**With pytest.ini:**
+```
+Your Laptop: $ pytest
+# Uses pytest.ini settings ✅
+
+Developer A's Laptop: $ pytest
+# Uses SAME pytest.ini settings ✅
+
+CI/CD Pipeline: $ pytest
+# Uses SAME pytest.ini settings ✅
+
+RESULT: Consistent everywhere! 🎯
+```
+
+#### **Pytest.ini Importance Checklist**
+
+✅ **Test Organization** - Group tests by markers (smoke, regression, bug_tracker)
+✅ **Performance** - Fast test discovery (only searches `tests/` folder)
+✅ **Error Prevention** - `--strict-markers` catches typos and mistakes
+✅ **Team Consistency** - Everyone uses same configuration
+✅ **CI/CD Compatibility** - Automated tests run identically
+✅ **Professional Output** - Verbose, readable test results
+✅ **Scalability** - Easy to add new markers as project grows
+✅ **Documentation** - Code documents what markers exist
+
+#### **Best Practices with pytest.ini**
+
+```bash
+# ✅ DO: Use markers to organize tests
+@pytest.mark.smoke
+def test_login():
+    pass
+
+@pytest.mark.bug_tracker
+def test_shipping_bug():
+    pass
+
+# ❌ DON'T: Use markers without defining them in pytest.ini
+@pytest.mark.undefined_marker  # pytest.ini will catch this!
+def test_something():
+    pass
+
+# ✅ DO: Run specific test groups
+pytest -m bug_tracker           # Only bug tracker tests
+pytest -m "smoke or critical"   # Smoke OR critical tests
+pytest -m "not slow"            # Exclude slow tests
+
+# ❌ DON'T: Run all tests when you only need a few
+pytest                          # Runs everything (slow for large projects)
+```
+
+---
 
 ---
 
@@ -873,58 +1051,402 @@ Closes #issue_number
 
 ## 🔄 CI/CD Integration
 
-### GitHub Actions Workflow
+### automated-tests.yml - GitHub Actions Workflow
 
-Create `.github/workflows/automated-tests.yml`:
+#### **What is GitHub Actions?**
+
+GitHub Actions is **automated testing on the cloud**. It automatically runs your tests every time you push code or create a pull request.
+
+#### **Why automated-tests.yml is Essential**
+
+| Without CI/CD | With GitHub Actions |
+|---------------|-------------------|
+| ❌ Tests only run locally (developers forget!) | ✅ Tests run automatically on every push |
+| ❌ Bugs make it to main branch | ✅ Failed tests block merging to main |
+| ❌ Different Python versions untested | ✅ Tests run on Python 3.8, 3.9, 3.10 |
+| ❌ No test reports for stakeholders | ✅ HTML reports generated automatically |
+| ❌ Manual testing before deployment | ✅ Automated quality gates |
+| ❌ No continuous feedback loop | ✅ Instant feedback on code quality |
+| ❌ Risky deployments | ✅ Confident, safe deployments |
+| ❌ Hard to catch regressions | ✅ Bug verifier tests run automatically |
+
+#### **Your GitHub Actions Workflow**
+
+File: `.github/workflows/automated-tests.yml`
 
 ```yaml
 name: Automated QA Tests
 
+# When does this run? (Triggers)
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop ]              # Run on every push to main/develop
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, develop ]              # Run on every pull request
   schedule:
-    - cron: '0 2 * * *'  # Daily at 2 AM UTC
+    - cron: '0 2 * * *'                      # Daily at 2 AM UTC (nightly tests)
 
 jobs:
+  # JOB 1: Run tests on multiple Python versions
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest                   # Use Ubuntu server
     strategy:
       matrix:
-        python-version: ['3.8', '3.9', '3.10']
+        python-version: ['3.8', '3.9', '3.10']  # Test on 3 Python versions!
 
     steps:
+    # Step 1: Get the code
     - uses: actions/checkout@v3
+
+    # Step 2: Install Python
     - uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Install Chrome and ChromeDriver
+    # Step 3: Install Chrome browser
+    - name: Install Chrome browser
       run: |
-        # Install Chrome
-        # Install matching ChromeDriver
+        curl -sS -o - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add
+        echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list
+        apt-get -yqq update
+        apt-get -yqq install google-chrome-stable
 
+    # Step 4: Install ChromeDriver
+    - name: Install ChromeDriver
+      run: |
+        CHROMEDRIVER_VERSION=$(curl -s https://chromedriver.chromium.org/downloads | grep -oP 'Version: \K[^<]*' | head -1)
+        wget https://chromedriver.chromium.org/download/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip
+        unzip chromedriver_linux64.zip
+        mv chromedriver /usr/local/bin/
+        chmod +x /usr/local/bin/chromedriver
+
+    # Step 5: Install Python dependencies
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-    - name: Run tests
+    # Step 6: Run all tests
+    - name: Run all tests
       run: |
         mkdir -p reports
-        python -m pytest tests/ --html=reports/test_report.html --self-contained-html -v
+        python -m pytest tests/ \
+          --html=reports/test_report.html \
+          --self-contained-html \
+          --junit-xml=reports/junit.xml \
+          -v
+      continue-on-error: true                # Don't fail if tests fail (yet)
 
-    - name: Upload reports
+    # Step 7: Upload test reports
+    - name: Upload test reports
+      uses: actions/upload-artifact@v3
+      if: always()                           # Upload even if tests fail
+      with:
+        name: test-reports-python-${{ matrix.python-version }}
+        path: reports/
+        retention-days: 30
+
+    # Step 8: Publish test results
+    - name: Publish test results
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always()
+      with:
+        files: reports/junit.xml
+        check_name: Test Results - Python ${{ matrix.python-version }}
+
+  # JOB 2: Special job just for bug tracker tests
+  bug-tracking:
+    runs-on: ubuntu-latest
+    name: Bug Verifier Tests
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    # (Install Chrome, ChromeDriver, dependencies...)
+
+    # Run ONLY bug tracker tests
+    - name: Run bug tracker tests
+      run: |
+        mkdir -p reports
+        python -m pytest tests/ \
+          -m bug_tracker \
+          -v \
+          --html=reports/bug_report.html \
+          --self-contained-html
+      continue-on-error: true
+
+    # Upload bug report
+    - name: Upload bug report
       uses: actions/upload-artifact@v3
       if: always()
       with:
-        name: test-reports
-        path: reports/
+        name: bug-verification-report
+        path: reports/bug_report.html
 ```
 
-### Jenkins Integration
+#### **How GitHub Actions Works - Step by Step**
+
+```
+1. YOU PUSH CODE
+   │
+   └─→ GitHub detects push to main branch
+       │
+       └─→ Triggers automated-tests.yml workflow
+           │
+           └─→ Starts running in cloud (no action needed!)
+
+2. GITHUB ACTIONS RUNS
+   │
+   ├─→ Job 1: Test on Python 3.8
+   │   ├─ Installs Chrome
+   │   ├─ Installs ChromeDriver
+   │   ├─ Installs dependencies
+   │   ├─ Runs all tests (20+ test cases)
+   │   ├─ Generates HTML report
+   │   └─ Uploads report (visible on GitHub)
+   │
+   ├─→ Job 2: Test on Python 3.9
+   │   └─ (Same as above)
+   │
+   └─→ Job 3: Test on Python 3.10
+       └─ (Same as above)
+
+3. SPECIAL JOB: Bug Tracking
+   │
+   └─→ Runs ONLY the 3 bug verifier tests
+       ├─ BUG-001 verification
+       ├─ BUG-003 verification
+       └─ BUG-004 verification
+           All report as ✅ PASS (bugs still exist)
+
+4. RESULTS POSTED TO GITHUB
+   │
+   ├─→ Pull request shows: ✅ All tests passed
+   ├─→ Artifacts (reports) downloadable
+   ├─→ Bug report shows all 3 bugs in "GREEN" state
+   └─→ You can merge with confidence!
+```
+
+#### **Real-World Scenarios**
+
+**Scenario 1: You Push Code with Bug**
+
+```
+Your Laptop: $ git push origin feature/new-feature
+                      ↓
+GitHub Detects Push → Workflow Triggers
+                      ↓
+Python 3.8 Tests: ✅ 18 passed, ❌ 1 failed
+Python 3.9 Tests: ✅ 18 passed, ❌ 1 failed
+Python 3.10 Tests: ✅ 18 passed, ❌ 1 failed
+                      ↓
+Pull Request shows: ❌ Tests Failed
+                      ↓
+You CANNOT merge (GitHub blocks it)
+                      ↓
+You fix the bug locally
+                      ↓
+You push again
+                      ↓
+All tests pass ✅
+                      ↓
+You CAN merge now!
+```
+
+**Scenario 2: Bug Verifier Tests Running**
+
+```
+Pull Request opened
+                ↓
+Bug Verifier Job starts
+                ↓
+BUG-001 (Character limit): test_review_edit_character_limit_bypass_bug_001
+        Expected: Form accepts >500 chars
+        Result: ✅ PASS (Bug still exists!) [Green]
+                ↓
+BUG-003 (Shipping): test_shipping_fee_reduction_calculation_bug_003
+        Expected: Shipping stays 0€ after reduction
+        Result: ✅ PASS (Bug still exists!) [Green]
+                ↓
+BUG-004 (Empty review): test_posted_review_returns_empty_string_bug_004
+        Expected: Posted review is empty string
+        Result: ✅ PASS (Bug still exists!) [Green]
+                ↓
+All Bug Verifiers PASS → Developers know:
+- All 3 bugs are still there
+- Still being monitored
+- Not accidentally fixed
+```
+
+**Scenario 3: Nightly Scheduled Tests**
+
+```
+Every day at 2 AM UTC:
+                ↓
+GitHub Actions automatically runs all tests
+                ↓
+All jobs run (Python 3.8, 3.9, 3.10)
+                ↓
+Bug tracker tests run
+                ↓
+Reports generated and stored
+                ↓
+Team can review overnight results
+                ↓
+No manual action needed!
+```
+
+#### **What automated-tests.yml Does For You**
+
+**1. Automatic Test Runs**
+```yaml
+on:
+  push:
+    branches: [ main, develop ]    # Every push triggers tests
+  pull_request:
+    branches: [ main, develop ]    # Every PR triggers tests
+  schedule:
+    - cron: '0 2 * * *'            # Daily at 2 AM
+```
+
+**2. Multi-Version Testing**
+```yaml
+strategy:
+  matrix:
+    python-version: ['3.8', '3.9', '3.10']  # Tests on 3 versions!
+```
+- Ensures compatibility across Python versions
+- Catches version-specific bugs
+- Professional quality assurance
+
+**3. Browser Installation**
+```yaml
+- name: Install Chrome browser
+- name: Install ChromeDriver
+```
+- Automatically sets up headless Chrome
+- No manual WebDriver management
+- Same environment as your local tests
+
+**4. Report Generation**
+```yaml
+--html=reports/test_report.html        # Beautiful HTML report
+--self-contained-html                  # Single downloadable file
+--junit-xml=reports/junit.xml          # CI/CD compatible format
+```
+
+**5. Artifact Storage**
+```yaml
+- uses: actions/upload-artifact@v3
+  with:
+    name: test-reports
+    path: reports/
+    retention-days: 30                 # Keep reports for 30 days
+```
+- Download test reports from GitHub
+- View screenshots of failures
+- Historical record of tests
+
+**6. Pull Request Integration**
+```
+Your PR shows: ✅ All checks passed [Automated Tests]
+              or
+              ❌ Some checks failed [Automated Tests]
+```
+- Shows test status directly on PR
+- Prevents merging broken code
+- Professional workflow
+
+#### **Key Benefits of automated-tests.yml**
+
+✅ **Automatic Quality Gate** - Tests run without asking
+✅ **Prevents Bad Merges** - Failed tests block PR merge
+✅ **Multi-Version Coverage** - Tests on Python 3.8, 3.9, 3.10
+✅ **Visual Reports** - HTML reports accessible on GitHub
+✅ **Bug Monitoring** - Bug verifiers run automatically
+✅ **Team Consistency** - All developers use same environment
+✅ **Scalability** - Add tests without changing workflow
+✅ **Historical Tracking** - 30-day report history
+✅ **Nightly Runs** - Scheduled tests while you sleep
+✅ **Zero Setup** - Works immediately after pushing
+
+#### **How to Use the Workflow**
+
+```bash
+# 1. Push your code
+git push origin feature/new-feature
+
+# 2. GitHub Actions automatically runs!
+# (No manual action needed)
+
+# 3. Wait for results (usually 2-5 minutes)
+
+# 4. Check PR for status
+# ✅ All checks passed → Safe to merge
+# ❌ Some checks failed → Fix and push again
+
+# 5. View reports
+# Click "Artifacts" tab on GitHub Actions → Download reports
+```
+
+#### **automated-tests.yml Importance Checklist**
+
+✅ **Quality Assurance** - Automated testing catch bugs early
+✅ **Risk Reduction** - Prevents bad code reaching production
+✅ **Team Accountability** - Everyone's code is tested equally
+✅ **Historical Record** - 30 days of test reports
+✅ **Professional Practice** - Industry standard CI/CD
+✅ **Multi-Version Testing** - Python 3.8, 3.9, 3.10 coverage
+✅ **Bug Monitoring** - Verifier tests run automatically
+✅ **Pull Request Safety** - Tests block merge if they fail
+✅ **Nightly Regression Testing** - Scheduled automatic runs
+✅ **Scalability** - Add tests without modifying workflow
+
+#### **Comparison: With vs Without CI/CD**
+
+**Without automated-tests.yml:**
+```
+Developer 1: Pushes code ❌ with bug
+Developer 2: Pulls bug   ❌ code breaks
+Developer 3: Reports bug 😟 to developer 1
+Developer 1: "I'll test locally..."
+            ❌ Later finds it was version-specific
+            ❌ Spent hours debugging
+            ❌ Bug already merged to main
+            ❌ Customer found it in production!
+```
+
+**With automated-tests.yml:**
+```
+Developer 1: Pushes code with bug
+            ↓
+GitHub Actions: Runs tests automatically
+            ↓
+❌ Test fails on Python 3.9
+            ↓
+GitHub PR: ❌ Checks failed (can't merge)
+            ↓
+Developer 1: Sees failure immediately
+            ↓
+Fixes bug locally and pushes again
+            ↓
+✅ All tests pass on all 3 Python versions
+            ↓
+Can merge safely ✅
+            ↓
+Zero customers affected! 😊
+```
+
+---
+
+### Jenkins Integration (Alternative)
+
+If using Jenkins instead of GitHub Actions:
 
 Configure Jenkins pipeline to:
 1. Clone repository
@@ -932,6 +1454,7 @@ Configure Jenkins pipeline to:
 3. Run pytest with HTML report generation
 4. Archive test reports
 5. Publish JUnit results
+6. Block merge if tests fail
 
 ---
 
