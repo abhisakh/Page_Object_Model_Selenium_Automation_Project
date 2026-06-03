@@ -1,0 +1,121 @@
+name: Automated QA Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run tests daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.8', '3.9', '3.10']
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+    
+    - name: Install Chrome browser
+      uses: browser-actions/setup-chrome@latest
+    
+    - name: Install ChromeDriver
+      uses: nanasess/setup-chromedriver@master
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Run all tests with HTML report
+      run: |
+        mkdir -p reports
+        python -m pytest tests/ --html=reports/test_report.html --self-contained-html --junit-xml=reports/junit.xml -v
+      continue-on-error: true
+    
+    - name: Run smoke tests only
+      run: |
+        python -m pytest tests/ -m smoke -v
+      if: always()
+    
+    - name: Run regression tests only
+      run: |
+        python -m pytest tests/ -m regression -v
+      if: always()
+    
+    - name: Upload test reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: pytest-reports-${{ matrix.python-version }}
+        path: reports/
+        retention-days: 30
+    
+    - name: Publish Test Results
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always()
+      with:
+        files: reports/junit.xml
+        check_name: Test Results - Python ${{ matrix.python-version }}
+
+  bug-tracking:
+    runs-on: ubuntu-latest
+    name: Bug Verifier Tests
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install Chrome and ChromeDriver
+      run: |
+        curl -sS -o - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add
+        echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list
+        apt-get -yqq update
+        apt-get -yqq install google-chrome-stable
+        CHROMEDRIVER_VERSION=$(curl -s https://chromedriver.chromium.org/downloads | grep -oP 'Version: \K[^<]*' | head -1)
+        wget https://chromedriver.chromium.org/download/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip
+        unzip chromedriver_linux64.zip
+        mv chromedriver /usr/local/bin/
+        chmod +x /usr/local/bin/chromedriver
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Run Bug Verifier Tests Only
+      run: |
+        mkdir -p reports
+        python -m pytest tests/ -m bug_tracker -v --html=reports/bug_report.html --self-contained-html
+      continue-on-error: true
+    
+    - name: Generate Bug Report Summary
+      if: always()
+      run: |
+        echo "# 🐛 Bug Tracking Report" > bug_summary.md
+        echo "Status: Active Regression Monitoring" >> bug_summary.md
+        echo "" >> bug_summary.md
+        echo "**Bugs Monitored:**" >> bug_summary.md
+        echo "- BUG-001: Review edit character limit bypass (>500 chars allowed)" >> bug_summary.md
+        echo "- BUG-003: Shipping cost sticky state (remains 0€ after reduction)" >> bug_summary.md
+        echo "- BUG-004: Posted review renders as empty string in UI" >> bug_summary.md
+    
+    - name: Upload Bug Report
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: bug-verification-report
+        path: reports/bug_report.html
