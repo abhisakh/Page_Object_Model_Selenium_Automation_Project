@@ -1,4 +1,15 @@
 # 🍎 GroceryMate QA Automation Framework (Page Object Model)
+> &nbsp; 🌐 [Open GroceryMate App](https://grocerymate.masterschool.com/)
+
+---
+
+<p align="center">
+  <a href="https://grocerymate.masterschool.com/auth">
+    <img src="https://github.com/user-attachments/assets/0461d1cd-3a18-4dda-b6a1-2781c17703b2" width="600"/>
+  </a>
+</p>
+
+---
 
 <div align="center">
 
